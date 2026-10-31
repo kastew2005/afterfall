@@ -1,51 +1,1691 @@
-<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Гараж — выживание</title>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>ПОСЛЕДНИЙ ГАРАЖ</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#090b0d;color:white;font:14px system-ui;display:grid;place-items:center;height:100vh}main{height:min(94vh,900px);aspect-ratio:9/16;position:relative;box-shadow:0 0 60px #000}canvas{width:100%;height:100%;display:block}button{position:absolute;top:12px;right:12px;background:#111b;color:white;border:1px solid #777;padding:9px}
-</style><main><canvas></canvas><button>▶ Начать</button></main>
-<script>
-const c=document.querySelector('canvas'),x=c.getContext('2d'),b=document.querySelector('button');c.width=450;c.height=800;
-let start=0,run=false,audio;
-const scenes=[
-[10,"СИРЕНЫ РАЗРЫВАЮТ ТИШИНУ","Экстренное сообщение: оставайтесь в укрытии."],
-[20,"ОНИ У ВОРОТ","Закройте ворота. Не привлекайте внимание."],
-[35,"ОЦЕНИ СВОИ РЕСУРСЫ","Вода • аптечка • фонарь • топливо"],
-[55,"ГОТОВЬСЯ К ВЫХОДУ","Укрепи вход. Собери рюкзак. Проверь выход."],
-[70,"ОПАСНОСТЬ ВНУТРИ","Отступай. Не позволяй загнать себя в угол."],
-[90,"ПОРА УХОДИТЬ","Выбирай тихий маршрут и держись укрытий."]
-];
-function rect(a,b,w,h,col){x.fillStyle=col;x.fillRect(a,b,w,h)}
-function line(points,col,w=3){x.beginPath();points.forEach((p,i)=>i?x.lineTo(...p):x.moveTo(...p));x.strokeStyle=col;x.lineWidth=w;x.stroke()}
-function draw(t){
-let s=scenes.findIndex(q=>t<q[0]);if(s<0)s=5;
-let shake=s===4?Math.sin(t*25)*5:0, zoom=1+Math.sin(t/5)*.012;
-x.setTransform(zoom,0,0,zoom,shake,0);rect(-30,-30,520,850,'#111617');
-let g=x.createLinearGradient(0,0,0,800);g.addColorStop(0,'#344044');g.addColorStop(1,'#090c0e');rect(0,0,450,800,g);
-for(let i=0;i<7;i++){rect(i*70,90,2,610,'#394144');line([[0,130+i*65],[450,130+i*65]],'#252c2e',2)}
-// garage door and slits
-rect(12,110,112,390,'#252b2d');for(let y=130;y<490;y+=35)line([[14,y],[121,y]],'#596064',2);
-if(s===1||s===5){rect(12,110,112,390,'#101213');line([[20,220],[115,220]],'#8a3827',2)}
-// car
-let bob=Math.sin(t*2)*2;
-x.fillStyle='#172328';x.beginPath();x.moveTo(120,490);x.lineTo(145,415);x.quadraticCurveTo(165,370,245,375);x.lineTo(320,425);x.lineTo(355,490);x.closePath();x.fill();
-rect(145,432,185,56,'#26383b');rect(175,394,75,35,'#526064');rect(260,410,45,20,'#526064');
-for(let xx of [165,315]){x.beginPath();x.arc(xx,492,22,0,7);x.fillStyle='#090b0c';x.fill();x.beginPath();x.arc(xx,492,9,0,7);x.fillStyle='#727879';x.fill()}
- // shelves, supplies, workbench
-rect(350,250,70,260,'#343331');for(let y=290;y<500;y+=55){rect(343,y,82,7,'#777064');rect(360,y-30,22,28,'#65714d');rect(390,y-25,20,23,'#8a7048')}
-rect(25,570,390,18,'#644a35');rect(50,588,12,110,'#46382c');rect(390,588,12,110,'#46382c');
-for(let i=0;i<8;i++)rect(45+i*43,545,20,24,i%2?'#9a814c':'#657548');
- // hero, moving toward door
-let hx=225+Math.sin(t/3)*22-(s>4?70:0),hy=570+bob;
-x.fillStyle='#16191a';x.beginPath();x.ellipse(hx,hy-95,22,31,0,0,7);x.fill();rect(hx-19,hy-65,38,80,'#42483f');line([[hx-12,hy+10],[hx-20,hy+65]],'#252a28',12);line([[hx+12,hy+10],[hx+21,hy+65]],'#252a28',12);
-line([[hx-15,hy-45],[hx-48,hy-12]],'#42483f',10);line([[hx+15,hy-45],[hx+40,hy-20]],'#42483f',10);
-// zombie silhouette; drifting smoke and light
-if(s>=1){let zx=s===4?300+Math.sin(t*4)*25:45;line([[zx,510],[zx-8,550],[zx,590],[zx-12,630]],'#171818',18);line([[zx,545],[zx-28,570],[zx-35,600]],'#171818',10);x.fillStyle='#b84632';x.fillRect(zx-4,507,3,3)}
-for(let i=0;i<12;i++){let xx=(i*83+t*9)%470,yy=(i*71-t*5+800)%800;x.globalAlpha=.08;x.beginPath();x.arc(xx,yy,12+i%4*8,0,7);x.fillStyle='#b5b3a2';x.fill()}x.globalAlpha=1;
-let flick=s===0&&Math.sin(t*8)>0.8;rect(0,0,450,800,flick?'#a5b7a522':'#00000055');
-x.setTransform(1,0,0,1,0,0);rect(0,0,450,150,'#0008');x.fillStyle='white';x.textAlign='center';x.font='bold 22px system-ui';x.fillText(scenes[s][1],225,55);x.font='15px system-ui';x.fillText(scenes[s][2],225,90);
-if(t>86){rect(0,0,450,800,'#000b');x.font='bold 21px system-ui';x.fillText('ВЫЖИВАНИЕ — ЭТО НЕ СИЛА.',225,380);x.fillText('ЭТО ПРАВИЛЬНЫЕ РЕШЕНИЯ.',225,415)}
+  :root{ color-scheme: dark; --accent:#c33; }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ width:100%; height:100%; background:#000; overflow:hidden; font-family:'Inter','Helvetica Neue',Arial,sans-serif; color:#ddd; }
+  #app{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000; }
+  #stage{
+    position:relative;
+    width:100%;
+    height:100%;
+    max-width:calc(100vh * 9 / 16);
+    max-height:100vh;
+    aspect-ratio:9/16;
+    background:#000;
+    overflow:hidden;
+    box-shadow:0 0 80px rgba(0,0,0,.9);
+  }
+  @media (max-width:820px){
+    #stage{ max-width:100vw; max-height:calc(100vw * 16 / 9); }
+  }
+  canvas{ display:block; width:100%; height:100%; }
+
+  /* Title */
+  #title{
+    position:absolute; inset:0; z-index:20;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:22px; text-align:center; padding:30px;
+    background:
+      radial-gradient(ellipse at 50% 40%, rgba(60,0,0,.55), rgba(0,0,0,.98) 70%),
+      #000;
+    transition:opacity .8s ease;
+  }
+  #title h1{
+    font-family:'Georgia',serif;
+    font-weight:900;
+    letter-spacing:.22em;
+    font-size:clamp(22px, 6.2vw, 46px);
+    color:#e8e4dc;
+    text-shadow:0 0 24px rgba(200,60,40,.55), 0 0 3px #000;
+    line-height:1.15;
+  }
+  #title .sub{
+    font-size:clamp(11px,2.6vw,13px);
+    letter-spacing:.35em;
+    text-transform:uppercase;
+    color:#888;
+  }
+  #title .meta{
+    font-size:clamp(10px,2.4vw,11px);
+    letter-spacing:.25em;
+    color:#555;
+    text-transform:uppercase;
+  }
+  #playBtn{
+    margin-top:16px;
+    padding:16px 32px;
+    background:transparent;
+    color:#e8e4dc;
+    border:1px solid rgba(200,180,160,.4);
+    letter-spacing:.3em;
+    text-transform:uppercase;
+    font-size:clamp(11px,2.6vw,13px);
+    cursor:pointer;
+    transition:all .25s;
+    font-family:inherit;
+  }
+  #playBtn:hover{ background:rgba(200,60,40,.15); border-color:var(--accent); color:#fff; box-shadow:0 0 30px rgba(200,60,40,.35); }
+
+  /* HUD */
+  #hud{
+    position:absolute; left:0; right:0; bottom:0; z-index:15;
+    padding:14px 16px 16px;
+    background:linear-gradient(to top, rgba(0,0,0,.85), transparent);
+    opacity:0; transition:opacity .35s;
+    pointer-events:none;
+  }
+  #hud.show{ opacity:1; pointer-events:auto; }
+  #timecode{
+    text-align:center; font-variant-numeric:tabular-nums;
+    font-size:11px; letter-spacing:.2em; color:#b8b0a4; margin-bottom:8px;
+  }
+  #seek{
+    width:100%; height:2px; background:#333; outline:none;
+    -webkit-appearance:none; appearance:none; margin:4px 0 10px;
+  }
+  #seek::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:12px; height:12px; border-radius:50%;
+    background:var(--accent); cursor:pointer; box-shadow:0 0 12px var(--accent);
+  }
+  #seek::-moz-range-thumb{
+    width:12px; height:12px; border:none; border-radius:50%;
+    background:var(--accent); cursor:pointer;
+  }
+  .controls{
+    display:flex; align-items:center; gap:10px; justify-content:center; flex-wrap:wrap;
+  }
+  .controls button{
+    background:transparent; border:1px solid #444; color:#ccc;
+    width:38px; height:38px; border-radius:50%;
+    cursor:pointer; font-size:14px;
+    transition:all .2s; font-family:inherit;
+  }
+  .controls button:hover{ border-color:var(--accent); color:#fff; background:rgba(200,60,40,.12); }
+
+  /* End screen */
+  #end{
+    position:absolute; inset:0; z-index:18;
+    display:flex; align-items:center; justify-content:center;
+    background:#000; opacity:0; pointer-events:none;
+    transition:opacity 1.4s ease;
+  }
+  #end.show{ opacity:1; pointer-events:auto; }
+  #end .text{
+    font-family:'Georgia',serif;
+    letter-spacing:.35em;
+    font-size:clamp(15px,4vw,22px);
+    color:#b8b0a4;
+    text-shadow:0 0 24px rgba(200,60,40,.3);
+    text-align:center;
+    padding:0 20px;
+  }
+  /* Flash overlay */
+  #flash{ position:absolute; inset:0; z-index:12; background:#fff; opacity:0; pointer-events:none; }
+  /* Loading */
+  #load{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#666; font-size:11px; letter-spacing:.3em; z-index:25; background:#000;
+    transition:opacity .6s; pointer-events:none;
+  }
+  #load.hide{ opacity:0; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <div id="load">ЗАГРУЗКА СЦЕНЫ…</div>
+    <div id="title">
+      <h1>ПОСЛЕДНИЙ<br>ГАРАЖ</h1>
+      <div class="sub">Короткометражный CGI-фильм</div>
+      <button id="playBtn">▶ Воспроизвести фильм</button>
+      <div class="meta">1 мин 30 сек · 9:16 · 30 FPS</div>
+    </div>
+    <div id="flash"></div>
+    <div id="end"><div class="text">ЭТО ТОЛЬКО НАЧАЛО…</div></div>
+    <div id="hud">
+      <div id="timecode">00:00 / 01:30</div>
+      <input id="seek" type="range" min="0" max="90" step="0.02" value="0">
+      <div class="controls">
+        <button id="btnPlay" title="Play/Pause">▶</button>
+        <button id="btnRestart" title="Restart">↻</button>
+        <button id="btnMute" title="Mute">🔊</button>
+        <button id="btnFull" title="Fullscreen">⛶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
 }
-function frame(){if(run){let t=(performance.now()-start)/1000;if(t>90){run=false;b.textContent='↻ Повторить'}else draw(t)}requestAnimationFrame(frame)}
-b.onclick=()=>{start=performance.now();run=true;b.textContent='Ⅱ Пауза';if(!audio){audio=new AudioContext();let o=audio.createOscillator(),gain=audio.createGain();o.type='sawtooth';o.frequency.value=48;gain.gain.value=.018;o.connect(gain).connect(audio.destination);o.start()}else if(audio.state==='suspended')audio.resume();draw(0)};
-draw(0);frame();
-</script></html>
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+/* ============================================================
+   CONSTANTS
+============================================================ */
+const DURATION = 90;
+const FPS = 30;
+const QUALITY_KEY = 'lasthigh_quality';
+const dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+
+/* ============================================================
+   RENDERER / SCENE / CAMERA
+============================================================ */
+const stageEl = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance', alpha:false });
+renderer.setPixelRatio(dpr);
+renderer.setSize(stageEl.clientWidth, stageEl.clientHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+stageEl.insertBefore(renderer.domElement, stageEl.firstChild);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x030407);
+scene.fog = new THREE.FogExp2(0x030406, 0.055);
+
+const camera = new THREE.PerspectiveCamera(38, 9/16, 0.05, 200);
+camera.position.set(4, 2, 8);
+
+/* ============================================================
+   POST PROCESSING
+============================================================ */
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(stageEl.clientWidth, stageEl.clientHeight), 0.9, 0.7, 0.15);
+composer.addPass(bloomPass);
+
+// Custom final pass: vignette + grain + chromatic aberration + slight contrast
+const FinalShader = {
+  uniforms:{
+    tDiffuse:{ value:null },
+    time:{ value:0 },
+    grainAmt:{ value:0.09 },
+    vignette:{ value:0.75 },
+    chroma:{ value:0.002 },
+    desat:{ value:0.15 }
+  },
+  vertexShader:`
+    varying vec2 vUv;
+    void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }
+  `,
+  fragmentShader:`
+    uniform sampler2D tDiffuse;
+    uniform float time, grainAmt, vignette, chroma, desat;
+    varying vec2 vUv;
+    float rand(vec2 co){ return fract(sin(dot(co.xy, vec2(12.9898,78.233)))*43758.5453); }
+    void main(){
+      vec2 uv = vUv;
+      // chromatic aberration (radial)
+      vec2 dir = uv - 0.5;
+      float dist = length(dir);
+      vec2 off = dir * chroma * (0.5 + dist*1.5);
+      float r = texture2D(tDiffuse, uv + off).r;
+      float g = texture2D(tDiffuse, uv).g;
+      float b = texture2D(tDiffuse, uv - off).b;
+      vec3 col = vec3(r,g,b);
+      // desaturate slightly (cinematic)
+      float lum = dot(col, vec3(0.299,0.587,0.114));
+      col = mix(col, vec3(lum), desat);
+      // cool tint
+      col = mix(col, col*vec3(0.85,0.95,1.15), 0.35);
+      // vignette
+      float v = smoothstep(0.95, 0.25, dist);
+      col *= mix(1.0, v, vignette);
+      // grain
+      float n = rand(uv*vec2(1.0+time*0.01, 1.0) + time*13.0);
+      col += (n-0.5)*grainAmt;
+      // contrast
+      col = (col - 0.5)*1.08 + 0.5;
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `
+};
+const finalPass = new ShaderPass(FinalShader);
+composer.addPass(finalPass);
+
+/* ============================================================
+   LIGHTING
+============================================================ */
+scene.add(new THREE.AmbientLight(0x1a1c22, 0.55));
+
+const moonLight = new THREE.DirectionalLight(0x7a8db8, 0.35);
+moonLight.position.set(8, 12, 6);
+moonLight.castShadow = true;
+moonLight.shadow.mapSize.set(1024,1024);
+moonLight.shadow.camera.left=-10; moonLight.shadow.camera.right=10;
+moonLight.shadow.camera.top=10; moonLight.shadow.camera.bottom=-10;
+scene.add(moonLight);
+
+// Garage hanging bulb (flicker)
+const garageLamp = new THREE.PointLight(0xffbb66, 3.0, 14, 2);
+garageLamp.position.set(0, 3.2, -1);
+garageLamp.castShadow = true;
+garageLamp.shadow.mapSize.set(512,512);
+scene.add(garageLamp);
+
+// Emergency red
+const redLight = new THREE.PointLight(0xff2211, 0.0, 8, 2);
+redLight.position.set(-2.4, 2.2, 2.2);
+scene.add(redLight);
+
+// Cold light from door crack
+const crackLight = new THREE.SpotLight(0x5577aa, 1.2, 12, Math.PI*0.5, 0.6, 1.5);
+crackLight.position.set(0, 1.2, 4.5);
+crackLight.target.position.set(0, 0.5, 0);
+scene.add(crackLight); scene.add(crackLight.target);
+
+// Fire glow from outside (through gate)
+const fireGlow = new THREE.PointLight(0xff5500, 1.2, 10, 2);
+fireGlow.position.set(2, 0.6, 5.5);
+scene.add(fireGlow);
+
+// Car headlights (added later)
+const headlightL = new THREE.SpotLight(0xfff2c0, 0, 20, Math.PI*0.35, 0.5, 1.2);
+const headlightR = new THREE.SpotLight(0xfff2c0, 0, 20, Math.PI*0.35, 0.5, 1.2);
+scene.add(headlightL); scene.add(headlightR);
+
+/* ============================================================
+   ENVIRONMENT: GARAGE
+============================================================ */
+const garage = new THREE.Group();
+scene.add(garage);
+
+// Materials
+const matConcrete   = new THREE.MeshStandardMaterial({ color:0x2a2a2e, roughness:0.95, metalness:0.05 });
+const matConcreteDk = new THREE.MeshStandardMaterial({ color:0x16161a, roughness:0.95, metalness:0.05 });
+const matMetalRust  = new THREE.MeshStandardMaterial({ color:0x4a3520, roughness:0.75, metalness:0.75 });
+const matMetalDark  = new THREE.MeshStandardMaterial({ color:0x2c2f33, roughness:0.6, metalness:0.85 });
+const matMetalShiny = new THREE.MeshStandardMaterial({ color:0x9aa0a8, roughness:0.35, metalness:0.9 });
+const matWood       = new THREE.MeshStandardMaterial({ color:0x33241a, roughness:0.9, metalness:0.0 });
+const matRubber     = new THREE.MeshStandardMaterial({ color:0x0e0e10, roughness:0.95, metalness:0.0 });
+const matGlass      = new THREE.MeshStandardMaterial({ color:0x1a2733, roughness:0.15, metalness:0.6, transparent:true, opacity:0.55 });
+const matLamp       = new THREE.MeshStandardMaterial({ color:0xffeedd, emissive:0xffbb55, emissiveIntensity:3.2 });
+
+// Floor
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 20), matConcreteDk);
+floor.rotation.x = -Math.PI/2;
+floor.receiveShadow = true;
+garage.add(floor);
+
+// Floor detail: oil stains as dark discs
+for (let i=0; i<8; i++){
+  const stain = new THREE.Mesh(new THREE.CircleGeometry(0.3+Math.random()*0.6, 12),
+    new THREE.MeshStandardMaterial({ color:0x08080a, roughness:0.35, metalness:0.6 }));
+  stain.rotation.x = -Math.PI/2;
+  stain.position.set((Math.random()-0.5)*6, 0.002, (Math.random()-0.5)*8);
+  garage.add(stain);
+}
+
+// Walls
+function wall(w, h, d, x, y, z, mat){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+  m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; garage.add(m); return m;
+}
+wall(14, 5, 0.3, 0, 2.5, -6, matConcrete);       // back
+wall(0.3, 5, 20, -7, 2.5, 0, matConcrete);       // left
+wall(0.3, 5, 20,  7, 2.5, 0, matConcrete);       // right
+// ceiling
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(14,20), new THREE.MeshStandardMaterial({color:0x121317, roughness:1}));
+ceil.rotation.x = Math.PI/2; ceil.position.y = 5; ceil.receiveShadow = true; garage.add(ceil);
+
+// Front gate (roller door) - split into slats for deformation
+const gateGroup = new THREE.Group();
+gateGroup.position.set(0, 0, 6);
+garage.add(gateGroup);
+const gateSlats = [];
+const SLAT_COUNT = 18;
+for (let i=0; i<SLAT_COUNT; i++){
+  const y = 0.14 + i * 0.27;
+  const slat = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.25, 0.12), matMetalDark);
+  slat.position.set(0, y, 0);
+  slat.castShadow = true; slat.receiveShadow = true;
+  slat.userData.baseY = y;
+  gateSlats.push(slat);
+  gateGroup.add(slat);
+}
+// gate guide rails
+wall(0.15, 5, 0.15, -3.3, 2.5, 6, matMetalRust);
+wall(0.15, 5, 0.15,  3.3, 2.5, 6, matMetalRust);
+// side door (open, leads out)
+const sideDoor = wall(1.0, 2.3, 0.15, -4.6, 1.15, 6, matMetalRust);
+sideDoor.geometry = new THREE.BoxGeometry(1.0, 2.3, 0.15);
+// door handle (will be a focus in scene 3)
+const doorHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.35,8), matMetalShiny);
+doorHandle.position.set(0, 1.1, 6.08);
+doorHandle.rotation.z = Math.PI/2;
+garage.add(doorHandle);
+
+// workbench
+const bench = new THREE.Group();
+bench.position.set(5.2, 0, -4.5);
+const benchTop = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.9), matWood);
+benchTop.position.y = 0.95; benchTop.castShadow=true; benchTop.receiveShadow=true;
+bench.add(benchTop);
+for (const sx of [-1.1, 1.1]){
+  for (const sz of [-0.35, 0.35]){
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.95, 0.08), matMetalRust);
+    leg.position.set(sx, 0.475, sz); leg.castShadow=true; bench.add(leg);
+  }
+}
+// tools on bench (varied)
+const toolBox = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.2,0.25), matMetalRust);
+toolBox.position.set(-0.6, 1.05, 0); toolBox.castShadow=true; bench.add(toolBox);
+const wrench = new THREE.Mesh(new THREE.BoxGeometry(0.05,0.02,0.35), matMetalShiny);
+wrench.position.set(0.4, 1.02, 0.1); wrench.castShadow=true; bench.add(wrench);
+for (let i=0; i<4; i++){
+  const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.05,8), matMetalShiny);
+  bolt.position.set(-0.2+i*0.15, 1.02, -0.2); bolt.rotation.z=Math.PI/2; bench.add(bolt);
+}
+garage.add(bench);
+
+// shelf
+const shelf = new THREE.Group();
+shelf.position.set(6.6, 0, -1);
+for (let i=0; i<3; i++){
+  const plank = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 3.5), matWood);
+  plank.position.set(0, 0.5+i*0.6, 0); plank.castShadow=true; plank.receiveShadow=true;
+  shelf.add(plank);
+}
+for (const sy of [0.3, 2.2]){
+  for (const sz of [-1.6, 1.6]){
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.2, 0.05), matMetalRust);
+    post.position.set(0, 1.1, sz); post.castShadow=true; shelf.add(post);
+  }
+}
+// shelf items
+for (let i=0;i<6;i++){
+  const can = new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.22,10),
+    i%2?matMetalRust:new THREE.MeshStandardMaterial({color:0x2a4a2a, roughness:0.7}));
+  can.position.set(0, 0.62, -1.4+i*0.55); can.castShadow=true; shelf.add(can);
+}
+garage.add(shelf);
+
+// Tires stack
+for (let i=0; i<4; i++){
+  const tire = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.14, 10, 20), matRubber);
+  tire.rotation.x = Math.PI/2;
+  tire.position.set(5.8, 0.14+i*0.28, 3.6);
+  tire.castShadow=true; tire.receiveShadow=true; garage.add(tire);
+}
+
+// Gas canisters
+for (let i=0;i<2;i++){
+  const can = new THREE.Mesh(new THREE.BoxGeometry(0.35,0.5,0.25), i?matMetalRust:new THREE.MeshStandardMaterial({color:0x6a1e1e, roughness:0.6}));
+  can.position.set(-6.2, 0.25, -2 - i*0.6); can.castShadow=true; garage.add(can);
+}
+
+// Crates
+function crate(x,z,s,rot=0){
+  const c = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), matWood);
+  c.position.set(x, s/2, z); c.rotation.y = rot;
+  c.castShadow=true; c.receiveShadow=true; garage.add(c); return c;
+}
+crate(-5.5, -3, 0.8, 0.2);
+crate(-5.5, -1.8, 0.6, -0.4);
+crate(-4.8, -2.4, 0.7, 0.7);
+crate(-2.5, -4.5, 0.9, 0.1);
+
+// Old fridge
+const fridge = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.7),
+  new THREE.MeshStandardMaterial({color:0x3a3d42, roughness:0.5, metalness:0.4}));
+fridge.position.set(-6.4, 0.9, 2.5); fridge.castShadow=true; garage.add(fridge);
+
+// Generator
+const gen = new THREE.Group();
+gen.position.set(-5.5, 0, 4.5);
+const genBody = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.7,0.6), new THREE.MeshStandardMaterial({color:0x8a2020, roughness:0.5, metalness:0.4}));
+genBody.position.y = 0.35; genBody.castShadow=true; gen.add(genBody);
+const genTop = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.3,8), matMetalRust);
+genTop.position.y = 0.85; genTop.rotation.z=Math.PI/2; gen.add(genTop);
+garage.add(gen);
+
+// Cables on floor
+const cableCurve = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(-5.0,0.02,4.4), new THREE.Vector3(-3.0,0.02,3.0),
+  new THREE.Vector3(-1.0,0.02,2.5), new THREE.Vector3(1.0,0.02,3.5),
+  new THREE.Vector3(2.5,0.02,4.2)
+]);
+const cableMesh = new THREE.Mesh(new THREE.TubeGeometry(cableCurve, 40, 0.025, 6, false),
+  new THREE.MeshStandardMaterial({color:0x111114, roughness:0.9}));
+garage.add(cableMesh);
+
+// Hanging lamp mesh
+const lampShade = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.2, 12, 1, true),
+  new THREE.MeshStandardMaterial({color:0x1a1a1e, roughness:0.7, metalness:0.5, side:THREE.DoubleSide}));
+lampShade.position.set(0, 3.2, -1); lampShade.rotation.x = Math.PI;
+garage.add(lampShade);
+const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), matLamp);
+bulb.position.set(0, 3.0, -1);
+garage.add(bulb);
+const lampCord = new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,1.8,4), new THREE.MeshStandardMaterial({color:0x111}));
+lampCord.position.set(0, 4.1, -1); garage.add(lampCord);
+
+/* ============================================================
+   ENVIRONMENT: STREET (outside gate, visible in scene 1 & 7)
+============================================================ */
+const street = new THREE.Group();
+scene.add(street);
+
+// Wet asphalt
+const asphalt = new THREE.Mesh(new THREE.PlaneGeometry(60, 30),
+  new THREE.MeshStandardMaterial({color:0x08080a, roughness:0.25, metalness:0.5}));
+asphalt.rotation.x = -Math.PI/2; asphalt.position.set(0, -0.01, 15);
+asphalt.receiveShadow = true;
+street.add(asphalt);
+
+// Distant buildings (silhouettes)
+for (let i=0; i<10; i++){
+  const h = 6 + Math.random()*10;
+  const b = new THREE.Mesh(new THREE.BoxGeometry(3+Math.random()*2, h, 3),
+    new THREE.MeshStandardMaterial({color:0x0a0b0f, roughness:1}));
+  b.position.set(-25 + i*5 + Math.random()*2, h/2, 25 + Math.random()*6);
+  street.add(b);
+}
+
+// Broken cars on street
+function ruinedCar(x, z, ry, color){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.7, 1.1),
+    new THREE.MeshStandardMaterial({color, roughness:0.7, metalness:0.5}));
+  body.position.y = 0.55; body.castShadow = true; g.add(body);
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, 1.0), matGlass);
+  cabin.position.y = 1.15; g.add(cabin);
+  for (const sx of [-0.8, 0.8]){
+    for (const sz of [-0.5, 0.5]){
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.2,12), matRubber);
+      w.rotation.z = Math.PI/2; w.position.set(sx, 0.32, sz); g.add(w);
+    }
+  }
+  g.position.set(x, 0, z); g.rotation.y = ry;
+  street.add(g);
+  return g;
+}
+ruinedCar(-4, 10, 0.3, 0x2a2020);
+ruinedCar(4, 12, -0.6, 0x1a1a24);
+ruinedCar(-8, 16, 0.8, 0x202028);
+
+// Fire barrel
+const fireBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,1.0,12),
+  new THREE.MeshStandardMaterial({color:0x2a1a10, roughness:0.9, metalness:0.4}));
+fireBarrel.position.set(4, 0.5, 8); street.add(fireBarrel);
+const fireLight = new THREE.PointLight(0xff5510, 3, 8, 2);
+fireLight.position.set(4, 1.5, 8); street.add(fireLight);
+
+// Street lamp (flickering)
+const streetLamp = new THREE.PointLight(0xaabbdd, 2, 12, 2);
+streetLamp.position.set(-6, 6, 12); street.add(streetLamp);
+const lampPost = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,7,6),
+  new THREE.MeshStandardMaterial({color:0x111}));
+lampPost.position.set(-6, 3.5, 12); street.add(lampPost);
+
+/* ============================================================
+   THE CAR (hero's)
+============================================================ */
+const car = new THREE.Group();
+car.position.set(1.5, 0, 0);
+car.rotation.y = 0;
+scene.add(car);
+
+const carPaint = new THREE.MeshStandardMaterial({ color:0x3a1a1a, roughness:0.35, metalness:0.8 });
+const carGlass = new THREE.MeshStandardMaterial({ color:0x0a1015, roughness:0.1, metalness:0.9, transparent:true, opacity:0.7 });
+const carBodyMesh = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.65, 1.15), carPaint);
+carBodyMesh.position.y = 0.55; carBodyMesh.castShadow = true; carBodyMesh.receiveShadow = true;
+car.add(carBodyMesh);
+// hood
+const carHood = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 1.05), carPaint);
+carHood.position.set(1.5, 0.55, 0); carHood.castShadow = true; car.add(carHood);
+// cabin
+const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.55, 1.05), carPaint);
+cabin.position.set(-0.1, 1.15, 0); cabin.castShadow = true; car.add(cabin);
+// windows
+const wSide = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.45), carGlass);
+wSide.position.set(-0.1, 1.15, 0.53); car.add(wSide);
+const wSideR = wSide.clone(); wSideR.position.z = -0.53; wSideR.rotation.y = Math.PI; car.add(wSideR);
+const wFront = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 0.45), carGlass);
+wFront.position.set(0.61, 1.15, 0); wFront.rotation.y = Math.PI/2; car.add(wFront);
+const wBack = wFront.clone(); wBack.position.x = -0.81; wBack.rotation.y = -Math.PI/2; car.add(wBack);
+// wheels
+const wheelPos = [[1.1,0.55],[1.1,-0.55],[-1.0,0.55],[-1.0,-0.55]];
+const wheels = [];
+for (const [wx, wz] of wheelPos){
+  const w = new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.34,0.22,14), matRubber);
+  w.rotation.x = Math.PI/2; w.position.set(wx, 0.34, wz);
+  w.castShadow = true; car.add(w);
+  wheels.push(w);
+}
+// headlights
+const headlightLamp1 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.15, 0.25),
+  new THREE.MeshStandardMaterial({color:0xfff5c0, emissive:0xfff0a0, emissiveIntensity:0}));
+headlightLamp1.position.set(1.87, 0.6, 0.4); car.add(headlightLamp1);
+const headlightLamp2 = headlightLamp1.clone(); headlightLamp2.position.z = -0.4; car.add(headlightLamp2);
+// taillights
+const tailMat = new THREE.MeshStandardMaterial({color:0xff2200, emissive:0xff1000, emissiveIntensity:0});
+const taillamp = new THREE.Mesh(new THREE.BoxGeometry(0.05,0.15,0.25), tailMat);
+taillamp.position.set(-1.18, 0.6, 0.4); car.add(taillamp);
+const taillamp2 = taillamp.clone(); taillamp2.position.z = -0.4; car.add(taillamp2);
+
+// Positioning of headlight spotlights (attached to car via world)
+headlightL.position.set(0,0,0);
+headlightR.position.set(0,0,0);
+headlightL.target.position.set(6,0,0);
+headlightR.target.position.set(6,0,0);
+scene.add(headlightL.target); scene.add(headlightR.target);
+
+/* ============================================================
+   CHARACTERS (procedural humanoids)
+============================================================ */
+function makeLimb(w, h, d, mat){
+  const g = new THREE.Group();
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+  m.position.y = -h/2; m.castShadow = true;
+  g.add(m);
+  return { group: g, mesh: m };
+}
+
+function makeHumanoid(opts){
+  const {
+    shirtColor = 0x333338, pantsColor = 0x22242a, skinColor = 0xb08868,
+    isZombie = false, scale = 1
+  } = opts;
+
+  const root = new THREE.Group();
+  root.scale.setScalar(scale);
+
+  const matShirt = new THREE.MeshStandardMaterial({ color:shirtColor, roughness:0.85, metalness:0.05 });
+  const matPants = new THREE.MeshStandardMaterial({ color:pantsColor, roughness:0.9, metalness:0.02 });
+  const matSkin  = new THREE.MeshStandardMaterial({ color:isZombie ? 0x7a8a70 : skinColor, roughness:0.75, metalness:0.02 });
+  const matHair  = new THREE.MeshStandardMaterial({ color:0x1a1512, roughness:0.9 });
+
+  // Pelvis / torso
+  const pelvis = new THREE.Group(); pelvis.position.y = 0.95; root.add(pelvis);
+  const pelvisMesh = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.22, 0.22), matPants);
+  pelvisMesh.castShadow = true; pelvis.add(pelvisMesh);
+
+  const spine = new THREE.Group(); spine.position.y = 0.11; pelvis.add(spine);
+  const chest = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.52, 0.24), matShirt);
+  chest.position.y = 0.28; chest.castShadow = true; spine.add(chest);
+  const shoulders = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.1, 0.24), matShirt);
+  shoulders.position.y = 0.5; shoulders.castShadow = true; spine.add(shoulders);
+
+  const neck = new THREE.Group(); neck.position.y = 0.55; spine.add(neck);
+  const neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.07,0.1,8), matSkin);
+  neckMesh.position.y = 0.05; neck.add(neckMesh);
+  const head = new THREE.Group(); head.position.y = 0.15; neck.add(head);
+  const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.24, 0.22), matSkin);
+  headMesh.castShadow = true; head.add(headMesh);
+  const hair = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.09, 0.23), matHair);
+  hair.position.y = 0.10; head.add(hair);
+  // Eyes
+  if (!isZombie){
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.018, 6, 6), new THREE.MeshStandardMaterial({color:0x111}));
+    eyeL.position.set(-0.05, 0.02, 0.11); head.add(eyeL);
+    const eyeR = eyeL.clone(); eyeR.position.x = 0.05; head.add(eyeR);
+  } else {
+    const eyeGlow = new THREE.MeshStandardMaterial({color:0x334422, emissive:0x223311, emissiveIntensity:0.8});
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 6), eyeGlow);
+    eyeL.position.set(-0.05, 0.02, 0.11); head.add(eyeL);
+    const eyeR = eyeL.clone(); eyeR.position.x = 0.05; head.add(eyeR);
+    // Open mouth
+    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.02),
+      new THREE.MeshStandardMaterial({color:0x1a0808, roughness:1}));
+    mouth.position.set(0, -0.07, 0.11); head.add(mouth);
+  }
+
+  // Arms
+  function makeArm(side){ // side = 1 or -1
+    const sh = new THREE.Group();
+    sh.position.set(0.26*side, 0.5, 0);
+    spine.add(sh);
+    const upper = makeLimb(0.10, 0.32, 0.10, matShirt);
+    upper.group.position.set(0, 0, 0); sh.add(upper.group);
+    const el = new THREE.Group();
+    el.position.y = -0.32; upper.group.add(el);
+    const fore = makeLimb(0.09, 0.30, 0.09, matShirt);
+    el.add(fore.group);
+    const hand = new THREE.Group(); hand.position.y = -0.30; el.add(hand);
+    const handMesh = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.08), matSkin);
+    handMesh.position.y = -0.05; handMesh.castShadow = true; hand.add(handMesh);
+    return { sh, el, hand };
+  }
+  const armL = makeArm(1);
+  const armR = makeArm(-1);
+
+  // Legs
+  function makeLeg(side){
+    const hip = new THREE.Group();
+    hip.position.set(0.11*side, -0.11, 0);
+    pelvis.add(hip);
+    const thigh = makeLimb(0.14, 0.45, 0.14, matPants);
+    hip.add(thigh.group);
+    const knee = new THREE.Group(); knee.position.y = -0.45; thigh.group.add(knee);
+    const shin = makeLimb(0.12, 0.42, 0.12, matPants);
+    knee.add(shin.group);
+    const foot = new THREE.Group(); foot.position.y = -0.42; shin.group.add(foot);
+    const footMesh = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.26),
+      new THREE.MeshStandardMaterial({ color:0x111214, roughness:0.7 }));
+    footMesh.position.set(0, 0.02, 0.06); footMesh.castShadow = true; foot.add(footMesh);
+    return { hip, knee, foot };
+  }
+  const legL = makeLeg(1);
+  const legR = makeLeg(-1);
+
+  // Store references
+  root.userData = { pelvis, spine, neck, head, armL, armR, legL, legR };
+
+  return root;
+}
+
+// Hero
+const hero = makeHumanoid({
+  shirtColor: 0x2a2a30, pantsColor: 0x1e2028, skinColor: 0xb08868, scale: 1.0
+});
+// Add a dark jacket layer over chest (visual depth)
+{
+  const jacket = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.45, 0.28),
+    new THREE.MeshStandardMaterial({color:0x17171b, roughness:0.85}));
+  jacket.position.y = 0.30;
+  hero.userData.spine.add(jacket);
+}
+hero.position.set(-2.0, 0, 3.8);
+hero.rotation.y = -0.3;
+scene.add(hero);
+
+// Zombies
+const zombies = [];
+function spawnZombie(opts){
+  const z = makeHumanoid(Object.assign({ isZombie:true }, opts));
+  scene.add(z);
+  zombies.push(z);
+  return z;
+}
+// Zombie 1 — thin worker
+const z1 = spawnZombie({ shirtColor:0x4a3a22, pantsColor:0x222018, skinColor:0x8a9a78, scale:0.97 });
+z1.visible = false;
+// Zombie 2 — big, torn jacket
+const z2 = spawnZombie({ shirtColor:0x2a2020, pantsColor:0x1a1a1a, skinColor:0x7a8a68, scale:1.08 });
+z2.visible = false;
+// Zombie 3 — asymmetric walker
+const z3 = spawnZombie({ shirtColor:0x2a2a2a, pantsColor:0x18181a, skinColor:0x808070, scale:1.0 });
+z3.visible = false;
+
+/* ============================================================
+   PARTICLES: Rain, Dust, Sparks
+============================================================ */
+// Rain — instanced vertical streaks
+const rainCount = 900;
+const rainGeo = new THREE.BufferGeometry();
+const rainPos = new Float32Array(rainCount * 3);
+const rainVel = new Float32Array(rainCount);
+for (let i=0; i<rainCount; i++){
+  rainPos[i*3+0] = (Math.random()-0.5)*30;
+  rainPos[i*3+1] = Math.random()*15;
+  rainPos[i*3+2] = 8 + Math.random()*20;
+  rainVel[i] = 12 + Math.random()*8;
+}
+rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+const rainMat = new THREE.PointsMaterial({
+  color: 0x8899bb, size:0.035, transparent:true, opacity:0.5, depthWrite:false
+});
+const rain = new THREE.Points(rainGeo, rainMat);
+scene.add(rain);
+
+// Dust particles (in garage light beams)
+const dustCount = 300;
+const dustGeo = new THREE.BufferGeometry();
+const dustPos = new Float32Array(dustCount*3);
+for (let i=0; i<dustCount; i++){
+  dustPos[i*3+0] = (Math.random()-0.5)*10;
+  dustPos[i*3+1] = Math.random()*4;
+  dustPos[i*3+2] = (Math.random()-0.5)*10 - 1;
+}
+dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+const dustMat = new THREE.PointsMaterial({
+  color: 0xffddaa, size:0.02, transparent:true, opacity:0.35, depthWrite:false, blending:THREE.AdditiveBlending
+});
+const dust = new THREE.Points(dustGeo, dustMat);
+scene.add(dust);
+
+// Sparks
+const sparkCount = 80;
+const sparkGeo = new THREE.BufferGeometry();
+const sparkPos = new Float32Array(sparkCount*3);
+const sparkLife = new Float32Array(sparkCount);
+const sparkVel = new Float32Array(sparkCount*3);
+for (let i=0; i<sparkCount; i++){ sparkLife[i] = 0; }
+sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+const sparkMat = new THREE.PointsMaterial({
+  color:0xffcc55, size:0.06, transparent:true, opacity:1, depthWrite:false, blending:THREE.AdditiveBlending
+});
+const sparks = new THREE.Points(sparkGeo, sparkMat);
+scene.add(sparks);
+function emitSpark(x, y, z){
+  for (let i=0; i<sparkCount; i++){
+    if (sparkLife[i] <= 0){
+      sparkPos[i*3+0] = x; sparkPos[i*3+1] = y; sparkPos[i*3+2] = z;
+      sparkVel[i*3+0] = (Math.random()-0.5)*3;
+      sparkVel[i*3+1] = Math.random()*3 + 1;
+      sparkVel[i*3+2] = (Math.random()-0.5)*3;
+      sparkLife[i] = 0.8 + Math.random()*0.4;
+      break;
+    }
+  }
+}
+
+/* ============================================================
+   AUDIO (Web Audio API, procedural)
+============================================================ */
+let audioCtx = null;
+let masterGain = null;
+let audioNodes = {};
+let audioEnabled = true;
+
+function initAudio(){
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.55;
+  masterGain.connect(audioCtx.destination);
+
+  // Rain: filtered noise
+  const rainBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+  const d = rainBuf.getChannelData(0);
+  for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1)*0.35;
+  const rainSrc = audioCtx.createBufferSource();
+  rainSrc.buffer = rainBuf; rainSrc.loop = true;
+  const rainFilter = audioCtx.createBiquadFilter();
+  rainFilter.type = 'highpass'; rainFilter.frequency.value = 1200;
+  const rainGain = audioCtx.createGain(); rainGain.gain.value = 0.12;
+  rainSrc.connect(rainFilter).connect(rainGain).connect(masterGain);
+  rainSrc.start();
+  audioNodes.rain = { src: rainSrc, gain: rainGain };
+
+  // Wind: low-pass noise
+  const windBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 3, audioCtx.sampleRate);
+  const w = windBuf.getChannelData(0);
+  for (let i=0;i<w.length;i++) w[i] = (Math.random()*2-1)*0.4;
+  const windSrc = audioCtx.createBufferSource();
+  windSrc.buffer = windBuf; windSrc.loop = true;
+  const windFilter = audioCtx.createBiquadFilter();
+  windFilter.type = 'lowpass'; windFilter.frequency.value = 400;
+  const windGain = audioCtx.createGain(); windGain.gain.value = 0.08;
+  windSrc.connect(windFilter).connect(windGain).connect(masterGain);
+  windSrc.start();
+  audioNodes.wind = { src: windSrc, gain: windGain };
+
+  // Drone: two oscillators with slow LFO
+  const osc1 = audioCtx.createOscillator(); osc1.type = 'sawtooth'; osc1.frequency.value = 55;
+  const osc2 = audioCtx.createOscillator(); osc2.type = 'sine'; osc2.frequency.value = 41;
+  const droneFilter = audioCtx.createBiquadFilter(); droneFilter.type = 'lowpass'; droneFilter.frequency.value = 200;
+  const droneGain = audioCtx.createGain(); droneGain.gain.value = 0.08;
+  osc1.connect(droneFilter); osc2.connect(droneFilter);
+  droneFilter.connect(droneGain).connect(masterGain);
+  osc1.start(); osc2.start();
+  audioNodes.drone = { osc1, osc2, gain: droneGain, filter: droneFilter };
+
+  // Engine (created but muted until scene 6)
+  const engOsc = audioCtx.createOscillator(); engOsc.type = 'sawtooth'; engOsc.frequency.value = 40;
+  const engFilter = audioCtx.createBiquadFilter(); engFilter.type='lowpass'; engFilter.frequency.value = 400;
+  const engGain = audioCtx.createGain(); engGain.gain.value = 0;
+  engOsc.connect(engFilter).connect(engGain).connect(masterGain);
+  engOsc.start();
+  audioNodes.engine = { osc: engOsc, gain: engGain, filter: engFilter };
+
+  // Siren (remote)
+  const sirenOsc = audioCtx.createOscillator(); sirenOsc.type='sine'; sirenOsc.frequency.value = 700;
+  const sirenGain = audioCtx.createGain(); sirenGain.gain.value = 0.015;
+  const sirenLFO = audioCtx.createOscillator(); sirenLFO.type='sine'; sirenLFO.frequency.value = 0.5;
+  const sirenLFOGain = audioCtx.createGain(); sirenLFOGain.gain.value = 200;
+  sirenLFO.connect(sirenLFOGain).connect(sirenOsc.frequency);
+  sirenOsc.connect(sirenGain).connect(masterGain);
+  sirenOsc.start(); sirenLFO.start();
+  audioNodes.siren = { osc: sirenOsc, gain: sirenGain };
+}
+
+function bangSound(volume = 0.4){
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i=0;i<d.length;i++){
+    const e = Math.exp(-i / (audioCtx.sampleRate * 0.05));
+    d[i] = (Math.random()*2-1) * e;
+  }
+  const src = audioCtx.createBufferSource(); src.buffer = buf;
+  const filt = audioCtx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value = 300;
+  const g = audioCtx.createGain(); g.gain.value = volume;
+  src.connect(filt).connect(g).connect(masterGain);
+  src.start(t);
+}
+
+function metalClang(volume = 0.3){
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator(); osc.type='triangle'; osc.frequency.value = 220 + Math.random()*120;
+  const osc2 = audioCtx.createOscillator(); osc2.type='sine'; osc2.frequency.value = 440 + Math.random()*200;
+  const g = audioCtx.createGain(); g.gain.setValueAtTime(volume, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+  osc.connect(g); osc2.connect(g); g.connect(masterGain);
+  osc.start(t); osc2.start(t); osc.stop(t+1.3); osc2.stop(t+1.3);
+}
+
+function engineStartSound(){
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator(); osc.type='sawtooth'; osc.frequency.value = 30;
+  const g = audioCtx.createGain(); g.gain.setValueAtTime(0.001, t);
+  g.gain.linearRampToValueAtTime(0.35, t+0.15);
+  g.gain.linearRampToValueAtTime(0.25, t+0.4);
+  const filter = audioCtx.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value = 600;
+  osc.connect(filter).connect(g).connect(masterGain);
+  osc.frequency.setValueAtTime(30, t);
+  osc.frequency.linearRampToValueAtTime(75, t+0.6);
+  osc.start(t); osc.stop(t+3);
+}
+
+function updateAudio(t){
+  if (!audioCtx) return;
+  // Rain fades during interior scenes
+  let rainAmt = 0.12, windAmt = 0.08;
+  if (t > 10 && t < 80){ rainAmt = 0.03; windAmt = 0.03; }
+  audioNodes.rain.gain.gain.value = rainAmt * (audioEnabled?1:0);
+  audioNodes.wind.gain.gain.value = windAmt * (audioEnabled?1:0);
+
+  // Drone intensifies over time
+  const droneAmt = 0.03 + Math.min(0.10, t * 0.0014);
+  audioNodes.drone.gain.gain.value = droneAmt * (audioEnabled?1:0);
+
+  // Siren fades out after first scene
+  audioNodes.siren.gain.gain.value = (t < 15 ? 0.015 : 0) * (audioEnabled?1:0);
+
+  // Engine runs 75-88
+  const engAmt = (t > 74 && t < 88) ? Math.min(0.4, (t-74)*0.15) : 0;
+  audioNodes.engine.gain.gain.value = engAmt * (audioEnabled?1:0);
+  if (engAmt > 0){
+    audioNodes.engine.osc.frequency.value = 45 + (t-74)*3;
+    audioNodes.engine.filter.frequency.value = 400 + (t-74)*40;
+  }
+}
+
+/* ============================================================
+   TIMELINE / SHOT SYSTEM
+============================================================ */
+// The entire film is computed as a pure function of time t (0..90).
+// No cumulative state. This makes seeking robust.
+
+function lerp(a,b,t){ return a + (b-a)*t; }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function smoothstep(a,b,t){ t = clamp((t-a)/(b-a),0,1); return t*t*(3-2*t); }
+function vlerp(out, a, b, t){ out.set(lerp(a.x,b.x,t), lerp(a.y,b.y,t), lerp(a.z,b.z,t)); return out; }
+
+const tmpVec = new THREE.Vector3();
+
+// Shot definitions. Each shot: { t0, t1, from:{pos,look,fov}, to:{pos,look,fov} }
+// Interpolated linearly inside shot. Cuts between shots.
+const shots = [
+  // 0-5: exterior establishing
+  { t0:0, t1:5,
+    from:{pos:new THREE.Vector3(9, 2.2, 14), look:new THREE.Vector3(0, 1.5, 4), fov:38},
+    to:  {pos:new THREE.Vector3(4.5, 1.5, 8.5), look:new THREE.Vector3(0, 1.2, 4), fov:34} },
+  // 5-10: close-up on gap under gate
+  { t0:5, t1:10,
+    from:{pos:new THREE.Vector3(0.5, 0.35, 8.5), look:new THREE.Vector3(0, 0.15, 5.8), fov:30},
+    to:  {pos:new THREE.Vector3(0.3, 0.25, 7.5), look:new THREE.Vector3(0, 0.1, 5.8), fov:26} },
+  // 10-15: inside wide reveal
+  { t0:10, t1:15,
+    from:{pos:new THREE.Vector3(4.5, 2.5, 5.2), look:new THREE.Vector3(-1, 1.2, 0), fov:42},
+    to:  {pos:new THREE.Vector3(3.2, 2.0, 4.6), look:new THREE.Vector3(-1.5, 1.0, 1), fov:40} },
+  // 15-20: orbit around hero
+  { t0:15, t1:20,
+    from:{pos:new THREE.Vector3(-3.5, 1.7, 3.5), look:new THREE.Vector3(-2.0, 1.0, 3.8), fov:36},
+    to:  {pos:new THREE.Vector3(-1.2, 1.5, 5.2), look:new THREE.Vector3(-2.0, 1.0, 3.8), fov:34} },
+  // 20-25: hero looks up as bang hits
+  { t0:20, t1:25,
+    from:{pos:new THREE.Vector3(-2.8, 1.4, 5.2), look:new THREE.Vector3(-1.9, 1.4, 4.0), fov:30},
+    to:  {pos:new THREE.Vector3(-2.4, 1.3, 4.8), look:new THREE.Vector3(-1.9, 1.4, 4.0), fov:26} },
+  // 25-32: cut to gate POV; hand reaches under
+  { t0:25, t1:32,
+    from:{pos:new THREE.Vector3(0.2, 0.6, 4.2), look:new THREE.Vector3(0, 0.1, 6), fov:34},
+    to:  {pos:new THREE.Vector3(0.0, 0.4, 3.4), look:new THREE.Vector3(0, 0.1, 6), fov:28} },
+  // 32-38: hero grabs pipe, stands
+  { t0:32, t1:38,
+    from:{pos:new THREE.Vector3(-3.6, 1.8, 5.0), look:new THREE.Vector3(-2.0, 1.0, 3.8), fov:38},
+    to:  {pos:new THREE.Vector3(-2.5, 1.6, 4.5), look:new THREE.Vector3(-1.9, 1.4, 3.6), fov:34} },
+  // 38-45: hero pushes shelf; tool falls
+  { t0:38, t1:45,
+    from:{pos:new THREE.Vector3(2.0, 2.2, 3.0), look:new THREE.Vector3(-1.0, 1.2, 4.5), fov:40},
+    to:  {pos:new THREE.Vector3(1.0, 1.9, 2.4), look:new THREE.Vector3(-0.5, 1.0, 5.5), fov:36} },
+  // 45-52: gate deforms, zombie head appears
+  { t0:45, t1:52,
+    from:{pos:new THREE.Vector3(0.0, 1.6, 3.0), look:new THREE.Vector3(0, 1.6, 6), fov:36},
+    to:  {pos:new THREE.Vector3(0.0, 1.4, 2.4), look:new THREE.Vector3(0, 1.4, 6), fov:32} },
+  // 52-60: hero swings pipe, lamp goes out, sparks
+  { t0:52, t1:60,
+    from:{pos:new THREE.Vector3(-3.8, 2.0, 3.8), look:new THREE.Vector3(0.5, 1.2, 5.5), fov:42},
+    to:  {pos:new THREE.Vector3(-3.0, 1.7, 3.4), look:new THREE.Vector3(0.5, 1.2, 5.5), fov:36} },
+  // 60-66: hero runs to car, opens door
+  { t0:60, t1:66,
+    from:{pos:new THREE.Vector3(-2.0, 1.6, 4.0), look:new THREE.Vector3(1.5, 1.0, 0.5), fov:38},
+    to:  {pos:new THREE.Vector3(1.0, 1.4, 2.2), look:new THREE.Vector3(1.5, 1.0, 0.0), fov:34} },
+  // 66-72: close-up on key, dashboard
+  { t0:66, t1:72,
+    from:{pos:new THREE.Vector3(0.4, 1.2, 1.4), look:new THREE.Vector3(0.2, 1.1, 0.2), fov:32},
+    to:  {pos:new THREE.Vector3(0.4, 1.2, 1.0), look:new THREE.Vector3(0.2, 1.1, 0.0), fov:28} },
+  // 72-75: engine revs
+  { t0:72, t1:75,
+    from:{pos:new THREE.Vector3(2.5, 1.8, 3.5), look:new THREE.Vector3(1.5, 0.9, 0.0), fov:36},
+    to:  {pos:new THREE.Vector3(2.8, 1.9, 3.8), look:new THREE.Vector3(1.5, 0.9, 0.0), fov:36} },
+  // 75-82: car bursts out — tracking shot
+  { t0:75, t1:82,
+    from:{pos:new THREE.Vector3(2.0, 2.0, 5.5), look:new THREE.Vector3(1.5, 1.0, 3.0), fov:42},
+    to:  {pos:new THREE.Vector3(-1.0, 2.5, 12.0), look:new THREE.Vector3(4.0, 1.0, 8.0), fov:38} },
+  // 82-86: exterior wide, car drives away
+  { t0:82, t1:86,
+    from:{pos:new THREE.Vector3(-2.0, 2.5, 15.0), look:new THREE.Vector3(2.0, 0.8, 8.0), fov:42},
+    to:  {pos:new THREE.Vector3(-3.0, 3.0, 18.0), look:new THREE.Vector3(0.0, 0.5, 12.0), fov:44} },
+  // 86-90: back in empty garage — pipe on floor, lamp dies
+  { t0:86, t1:90,
+    from:{pos:new THREE.Vector3(2.5, 1.5, 3.5), look:new THREE.Vector3(0.5, 0.2, 4.5), fov:38},
+    to:  {pos:new THREE.Vector3(1.8, 1.2, 3.8), look:new THREE.Vector3(0.5, 0.2, 4.5), fov:36} },
+];
+
+function getShot(t){
+  for (let i=0; i<shots.length; i++){
+    if (t >= shots[i].t0 && t < shots[i].t1) return shots[i];
+  }
+  return shots[shots.length-1];
+}
+
+function updateCamera(t){
+  const shot = getShot(t);
+  const u = smoothstep(0, 1, (t - shot.t0) / (shot.t1 - shot.t0));
+  camera.position.lerpVectors(shot.from.pos, shot.to.pos, u);
+  const look = tmpVec.lerpVectors(shot.from.look, shot.to.look, u);
+  camera.lookAt(look);
+  const fov = lerp(shot.from.fov, shot.to.fov, u);
+  if (Math.abs(camera.fov - fov) > 0.05){
+    camera.fov = fov; camera.updateProjectionMatrix();
+  }
+}
+
+/* ============================================================
+   CHARACTER POSE (procedural, time-based)
+============================================================ */
+function applyHeroPose(h, t){
+  const { pelvis, spine, neck, head, armL, armR, legL, legR } = h.userData;
+
+  // Reset
+  pelvis.position.y = 0.95;
+  spine.rotation.set(0,0,0);
+  neck.rotation.set(0,0,0);
+  head.rotation.set(0,0,0);
+  armL.sh.rotation.set(0,0,0); armL.el.rotation.set(0,0,0);
+  armR.sh.rotation.set(0,0,0); armR.el.rotation.set(0,0,0);
+  legL.hip.rotation.set(0,0,0); legL.knee.rotation.set(0,0,0);
+  legR.hip.rotation.set(0,0,0); legR.knee.rotation.set(0,0,0);
+
+  const breath = Math.sin(t * 1.6) * 0.02;
+  spine.scale.y = 1 + breath * 0.6;
+
+  // Scene 2 (10-20): crouched near car, tense
+  if (t < 20){
+    pelvis.position.y = 0.72;
+    legL.hip.rotation.x = -0.9; legL.knee.rotation.x = 1.6;
+    legR.hip.rotation.x = -1.0; legR.knee.rotation.x = 1.5;
+    spine.rotation.x = 0.15;
+    neck.rotation.x = -0.1;
+    armL.sh.rotation.x = 0.6; armL.el.rotation.x = 0.9;
+    armR.sh.rotation.x = 0.5; armR.el.rotation.x = 1.0;
+    // slight sway
+    spine.rotation.z = Math.sin(t*0.7) * 0.02;
+  }
+  // Scene 3 (20-32): startle — head snaps up
+  else if (t < 32){
+    pelvis.position.y = 0.75;
+    legL.hip.rotation.x = -0.9; legL.knee.rotation.x = 1.55;
+    legR.hip.rotation.x = -1.0; legR.knee.rotation.x = 1.45;
+    spine.rotation.x = 0.15;
+    const tension = smoothstep(20, 22, t);
+    head.rotation.x = -0.25 * tension;
+    head.rotation.y = Math.sin((t-20)*3) * 0.1 * (1-tension) + 0.3 * tension;
+    armL.sh.rotation.x = 0.6; armL.el.rotation.x = 0.9;
+    armR.sh.rotation.x = 0.5; armR.el.rotation.x = 1.0;
+    spine.rotation.z = Math.sin(t*1.2) * 0.03;
+  }
+  // Scene 4 (32-45): stands, moves to shelf, pushes
+  else if (t < 45){
+    const rise = smoothstep(32, 34, t);
+    const crouch = 1 - rise;
+    pelvis.position.y = 0.72 + 0.23 * rise;
+    legL.hip.rotation.x = -0.9 * crouch; legL.knee.rotation.x = 1.6 * crouch;
+    legR.hip.rotation.x = -1.0 * crouch; legR.knee.rotation.x = 1.5 * crouch;
+    // walk cycle when moving
+    const walking = smoothstep(34, 36, t) * (1 - smoothstep(40, 42, t));
+    const phase = (t - 34) * 8;
+    if (walking > 0.01){
+      legL.hip.rotation.x += Math.sin(phase) * 0.5 * walking;
+      legR.hip.rotation.x += -Math.sin(phase) * 0.5 * walking;
+      legL.knee.rotation.x += Math.max(0, Math.sin(phase - 0.5)) * 0.6 * walking;
+      legR.knee.rotation.x += Math.max(0, -Math.sin(phase + 0.5)) * 0.6 * walking;
+      armL.sh.rotation.x = -Math.sin(phase) * 0.4 * walking;
+      armR.sh.rotation.x = Math.sin(phase) * 0.4 * walking;
+    }
+    // push pose at end
+    const pushing = smoothstep(42, 44, t);
+    armL.sh.rotation.x = lerp(armL.sh.rotation.x, -1.2, pushing);
+    armR.sh.rotation.x = lerp(armR.sh.rotation.x, -1.2, pushing);
+    armL.el.rotation.x = lerp(armL.el.rotation.x, 0.4, pushing);
+    armR.el.rotation.x = lerp(armR.el.rotation.x, 0.4, pushing);
+    spine.rotation.x = 0.1 + pushing * 0.3;
+  }
+  // Scene 5 (45-60): backs away, holds pipe
+  else if (t < 60){
+    const back = smoothstep(45, 48, t);
+    legL.hip.rotation.x = Math.sin((t-45)*4) * 0.2 * (1-back);
+    legR.hip.rotation.x = -Math.sin((t-45)*4) * 0.2 * (1-back);
+    // raised pipe (right arm)
+    armR.sh.rotation.x = -1.9;
+    armR.el.rotation.x = 0.3;
+    armL.sh.rotation.x = -0.4;
+    armL.el.rotation.x = 0.7;
+    spine.rotation.x = -0.1;
+    // swing motion 55-57
+    const swing = Math.max(0, Math.sin((t-55)*Math.PI*1.5)) * smoothstep(54, 55, t) * (1-smoothstep(57, 58, t));
+    armR.sh.rotation.x = lerp(-1.9, 0.5, swing);
+    armR.el.rotation.x = lerp(0.3, 0.9, swing);
+  }
+  // Scene 6 (60-75): runs to car, sits
+  else if (t < 75){
+    const runStart = smoothstep(60, 61, t);
+    const sitStart = smoothstep(65, 67, t);
+    if (sitStart < 0.5){
+      // running
+      const phase = (t - 60) * 10;
+      pelvis.position.y = 0.85 + Math.abs(Math.sin(phase)) * 0.05;
+      legL.hip.rotation.x = Math.sin(phase) * 0.8;
+      legR.hip.rotation.x = -Math.sin(phase) * 0.8;
+      legL.knee.rotation.x = Math.max(0, Math.sin(phase - 0.5)) * 1.0;
+      legR.knee.rotation.x = Math.max(0, -Math.sin(phase - 0.5)) * 1.0;
+      armL.sh.rotation.x = -Math.sin(phase) * 0.9;
+      armR.sh.rotation.x = Math.sin(phase) * 0.9;
+      armL.el.rotation.x = 0.8; armR.el.rotation.x = 0.8;
+      spine.rotation.x = 0.15;
+    } else {
+      // sitting in car
+      pelvis.position.y = 0.95;
+      legL.hip.rotation.x = -1.4; legL.knee.rotation.x = 1.6;
+      legR.hip.rotation.x = -1.4; legR.knee.rotation.x = 1.6;
+      spine.rotation.x = 0.05;
+      armL.sh.rotation.x = -1.3; armL.el.rotation.x = 0.4;
+      armR.sh.rotation.x = -1.3; armR.el.rotation.x = 0.4;
+      head.rotation.x = 0.1;
+    }
+  }
+  // Scene 7 (75-90): driving, out of view
+  else {
+    pelvis.position.y = 0.95;
+    legL.hip.rotation.x = -1.4; legL.knee.rotation.x = 1.6;
+    legR.hip.rotation.x = -1.4; legR.knee.rotation.x = 1.6;
+    armL.sh.rotation.x = -1.3; armL.el.rotation.x = 0.4;
+    armR.sh.rotation.x = -1.3; armR.el.rotation.x = 0.4;
+  }
+}
+
+function applyZombiePose(z, t, seed){
+  const { pelvis, spine, neck, head, armL, armR, legL, legR } = z.userData;
+  const phase = t * 3 + seed * 7;
+  const walk = Math.sin(phase);
+  const walk2 = Math.sin(phase + 0.8);
+
+  // Asymmetric shamble
+  legL.hip.rotation.x = walk * 0.35 + 0.15;
+  legR.hip.rotation.x = -walk * 0.28 - 0.05;
+  legL.knee.rotation.x = Math.max(0, walk2) * 0.4;
+  legR.knee.rotation.x = Math.max(0, -walk2) * 0.3;
+
+  // Slumped shoulders
+  spine.rotation.x = 0.15 + Math.sin(phase*0.5) * 0.05;
+  spine.rotation.z = Math.sin(phase*0.4) * 0.06;
+  head.rotation.z = Math.sin(phase*0.7) * 0.15;
+  head.rotation.x = -0.2 + Math.sin(phase*1.1) * 0.1;
+
+  // Arms hanging forward
+  armL.sh.rotation.x = -0.9 + Math.sin(phase*0.9) * 0.3;
+  armR.sh.rotation.x = -0.9 + Math.sin(phase*1.1 + 1) * 0.3;
+  armL.el.rotation.x = 0.4 + Math.sin(phase*1.3) * 0.2;
+  armR.el.rotation.x = 0.5 + Math.sin(phase*1.4 + 1) * 0.2;
+}
+
+/* ============================================================
+   MASTER STATE UPDATE
+============================================================ */
+function updateHero(t){
+  // Position keyframes (with smooth interpolation)
+  let hx, hz, hy, hry;
+
+  // Base: crouched next to car
+  hx = -1.8; hz = 3.6; hy = 0; hry = -0.3;
+
+  // Walk toward gate at 34-40, push, back at 45, then to car at 60, sit
+  if (t >= 34 && t < 40){
+    const k = smoothstep(34, 40, t);
+    hx = lerp(-1.8, -1.0, k);
+    hz = lerp(3.6, 4.6, k);
+    hry = lerp(-0.3, 0.1, k);
+  } else if (t >= 40 && t < 45){
+    const k = smoothstep(40, 45, t);
+    hx = lerp(-1.0, -0.5, k);
+    hz = lerp(4.6, 5.1, k);
+    hry = 0.0;
+  } else if (t >= 45 && t < 55){
+    const k = smoothstep(45, 48, t);
+    hx = lerp(-0.5, -1.6, k);
+    hz = lerp(5.1, 4.2, k);
+    hry = -0.1;
+  } else if (t >= 55 && t < 60){
+    // stays back from gate during breach
+    hx = -1.8; hz = 4.0; hry = 0.0;
+  } else if (t >= 60 && t < 66){
+    // runs to car
+    const k = smoothstep(60, 65, t);
+    hx = lerp(-1.8, 1.0, k);
+    hz = lerp(4.0, 0.2, k);
+    hry = lerp(0.0, -Math.PI/2, k);
+    hy = 0;
+  } else if (t >= 66){
+    // inside car
+    hx = 1.5; hz = 0.0;
+    hy = 0.9; // will be added to base pose which uses pelvis anyway
+  }
+
+  hero.position.set(hx, hy, hz);
+  hero.rotation.y = hry;
+  applyHeroPose(hero, t);
+
+  // Hide hero when inside car (he's "in" the car mesh)
+  if (t >= 66 && t < 90) hero.visible = false;
+  else hero.visible = true;
+}
+
+function updateZombies(t){
+  // Zombie 1: appears at gate from 25s (hand under gate), then head at 45
+  z1.visible = false;
+  if (t >= 25 && t < 32){
+    // Just a hand under gate — approximate by showing zombie behind gate with arm reaching
+    z1.visible = true;
+    z1.position.set(0, 0, 7.5); // behind gate
+    z1.rotation.y = Math.PI; // facing gate
+    // Override pose: crouched, arm reaching under
+    const { pelvis, spine, armR, legL, legR, head } = z1.userData;
+    pelvis.position.y = 0.6;
+    legL.hip.rotation.x = -1.2; legL.knee.rotation.x = 1.8;
+    legR.hip.rotation.x = -1.2; legR.knee.rotation.x = 1.8;
+    spine.rotation.x = 0.8;
+    armR.sh.rotation.x = 1.8; armR.el.rotation.x = 0.2;
+    head.rotation.x = -0.6;
+  } else if (t >= 45 && t < 60){
+    z1.visible = true;
+    z1.position.set(0.4, 0, 6.4);
+    z1.rotation.y = Math.PI;
+    // struggling through gate
+    applyZombiePose(z1, t, 0.3);
+    const { spine, head, armR, armL } = z1.userData;
+    spine.rotation.x = 0.4 + Math.sin(t*2)*0.1;
+    armR.sh.rotation.x = 1.4 + Math.sin(t*3)*0.4;
+    armL.sh.rotation.x = 1.4 + Math.sin(t*3+1)*0.4;
+    head.rotation.x = -0.4;
+    z1.position.z = 6.4 - smoothstep(52, 60, t) * 0.6;
+  } else if (t >= 60 && t < 82){
+    z1.visible = true;
+    // approaching the car
+    const k = smoothstep(60, 66, t);
+    z1.position.set(lerp(0.4, 3.5, k), 0, lerp(6.0, 1.2, k));
+    z1.rotation.y = Math.PI * 0.85;
+    applyZombiePose(z1, t, 0.3);
+  } else {
+    z1.visible = false;
+  }
+
+  // Zombie 2: bursts in after 55
+  if (t >= 55 && t < 82){
+    z2.visible = true;
+    const k = smoothstep(55, 60, t);
+    z2.position.set(lerp(1.0, -1.0, k), 0, lerp(6.2, 3.5, k));
+    z2.rotation.y = Math.PI;
+    applyZombiePose(z2, t, 0.9);
+    // big zombie takes big strides
+    const { legL, legR } = z2.userData;
+    legL.hip.rotation.x *= 1.3; legR.hip.rotation.x *= 1.3;
+  } else {
+    z2.visible = false;
+  }
+
+  // Zombie 3: enters after 58, hits window in scene 6
+  if (t >= 58 && t < 82){
+    z3.visible = true;
+    const k = smoothstep(58, 64, t);
+    z3.position.set(lerp(-2.0, 2.8, k), 0, lerp(5.5, -0.6, k));
+    z3.rotation.y = Math.PI * 0.9;
+    applyZombiePose(z3, t, 1.7);
+    // Hit window at 68
+    if (t >= 67 && t < 72){
+      const hit = Math.max(0, Math.sin((t-67)*4));
+      z3.userData.armL.sh.rotation.x = -1.5 + hit * 0.5;
+      z3.userData.armR.sh.rotation.x = -1.5 + hit * 0.5;
+    }
+  } else {
+    z3.visible = false;
+  }
+}
+
+function updateGate(t){
+  // Gate deforms progressively
+  let deform = 0;
+  if (t >= 20 && t < 32){
+    // small pushes at 20, 24, 28, 31
+    const pushes = [20.2, 23.6, 27.4, 30.5];
+    for (const p of pushes){
+      if (t >= p && t < p + 0.4){
+        deform = Math.max(deform, Math.sin((t-p)/0.4 * Math.PI) * 0.08);
+      }
+    }
+  } else if (t >= 45 && t < 60){
+    deform = smoothstep(45, 60, t) * 0.9;
+  } else if (t >= 60){
+    deform = 1.0;
+  }
+
+  // Apply deformation: lower slats bulge inward
+  for (let i=0; i<gateSlats.length; i++){
+    const s = gateSlats[i];
+    const influence = Math.max(0, 1 - i / 8); // lower slats move more
+    s.position.z = -deform * influence * 0.4;
+    s.rotation.x = deform * influence * 0.15;
+    // Random small offsets for damage feel
+    if (deform > 0.3){
+      s.position.y = s.userData.baseY + (Math.sin(i*3 + t*2) * 0.01 * deform);
+    } else {
+      s.position.y = s.userData.baseY;
+    }
+  }
+}
+
+function updateCar(t){
+  // Base: car parked at 1.5, 0, 0
+  let cx = 1.5, cz = 0, cry = 0;
+
+  // At 75, car bursts out; before that it's parked
+  if (t >= 75){
+    const k = smoothstep(75, 82, t);
+    cx = 1.5 + k * 22; // drives off to +x
+    cz = 0 + k * 6;
+    cry = k * 0.4;
+    // Slight wobble
+    cry += Math.sin(t * 8) * 0.03 * (1 - k);
+  }
+  car.position.set(cx, 0, cz);
+  car.rotation.y = cry;
+  car.rotation.z = Math.sin(t * 6) * 0.01 * smoothstep(75, 78, t) * (1 - smoothstep(80, 82, t));
+
+  // Rotate wheels
+  for (const w of wheels) w.rotation.z += 0; // not used, wheel is x-rotated
+
+  // Headlight on/off
+  const lightsOn = (t >= 74) ? 1 : 0;
+  headlightLamp1.material.emissiveIntensity = lightsOn * 3;
+  headlightLamp2.material.emissiveIntensity = lightsOn * 3;
+  headlightL.intensity = lightsOn * 8;
+  headlightR.intensity = lightsOn * 8;
+  // Update spot light positions to car front
+  const carFront = new THREE.Vector3(cx + 2.2*Math.cos(cry), 0.6, cz - 2.2*Math.sin(cry));
+  headlightL.position.set(cx + Math.cos(cry)*1.9 - Math.sin(cry)*0.4, 0.6, cz - Math.sin(cry)*1.9 - Math.cos(cry)*0.4);
+  headlightR.position.set(cx + Math.cos(cry)*1.9 + Math.sin(cry)*0.4, 0.6, cz - Math.sin(cry)*1.9 + Math.cos(cry)*0.4);
+  headlightL.target.position.set(cx + Math.cos(cry)*8, 0.3, cz - Math.sin(cry)*8);
+  headlightR.target.position.set(cx + Math.cos(cry)*8, 0.3, cz - Math.sin(cry)*8);
+
+  // Taillights during drive
+  tailMat.emissiveIntensity = (t > 75) ? 2 : 0;
+
+  // Hero visibility trick — if driving, hero invisible
+}
+
+function updateLighting(t){
+  // Garage lamp: flicker early, bursts, then dies at 55-58
+  let lampIntensity = 3.0;
+  let flicker = 1;
+
+  if (t < 20){
+    flicker = 1 - Math.random() * 0.15;
+  } else if (t < 32){
+    // tension flickers
+    flicker = 0.7 + Math.sin(t * 13) * 0.15 + Math.random() * 0.1;
+  } else if (t < 45){
+    flicker = 0.9 + Math.random() * 0.15;
+  } else if (t < 55){
+    // full
+    flicker = 1;
+  } else if (t < 58){
+    // dies
+    flicker = Math.max(0, 1 - (t - 55) / 3);
+    if (t > 55.5 && t < 56.2) flicker = Math.random() * 0.5;
+  } else if (t < 60){
+    // off
+    flicker = 0;
+  } else if (t < 66){
+    // occasional flicker back
+    flicker = (Math.sin(t*4) > 0.3) ? 0.6 : 0.1;
+  } else if (t < 74){
+    flicker = 0.4 + Math.random() * 0.2;
+  } else {
+    flicker = 0.2;
+  }
+
+  garageLamp.intensity = lampIntensity * flicker;
+  bulb.material.emissiveIntensity = 3.2 * flicker;
+
+  // Red emergency light pulses 45-60
+  if (t >= 45 && t < 62){
+    redLight.intensity = (Math.sin(t * 5) * 0.5 + 0.5) * 2.5;
+  } else {
+    redLight.intensity = 0;
+  }
+
+  // Fire glow flickers
+  fireGlow.intensity = 1.2 + Math.sin(t * 4) * 0.4 + Math.random() * 0.2;
+
+  // Crack light dims when gate deforms
+  crackLight.intensity = Math.max(0, 1.2 - smoothstep(45, 60, t) * 1.2);
+
+  // Sirens/firelight from outside — muted inside
+  const indoorFactor = (t > 10 && t < 78) ? 0.3 : 1.0;
+  moonLight.intensity = 0.35 * indoorFactor;
+}
+
+function updateParticles(t, dt){
+  // Rain: only outside, only during scene 1 and 7
+  const rainVisible = (t < 10) || (t > 78);
+  rain.visible = rainVisible;
+  rainMat.opacity = rainVisible ? 0.5 : 0;
+  if (rainVisible){
+    const pos = rainGeo.attributes.position.array;
+    for (let i=0; i<rainCount; i++){
+      pos[i*3+1] -= rainVel[i] * dt;
+      if (pos[i*3+1] < 0){
+        pos[i*3+1] = 15;
+        pos[i*3+0] = (Math.random()-0.5)*30;
+      }
+    }
+    rainGeo.attributes.position.needsUpdate = true;
+  }
+
+  // Dust: always visible indoors, drift slowly
+  const dustOn = (t > 10 && t < 85) ? 0.35 : 0.15;
+  dustMat.opacity = dustOn;
+  const dp = dustGeo.attributes.position.array;
+  for (let i=0; i<dustCount; i++){
+    dp[i*3+0] += Math.sin(t + i) * 0.001;
+    dp[i*3+1] += Math.sin(t*0.7 + i*0.3) * 0.0008;
+  }
+  dustGeo.attributes.position.needsUpdate = true;
+
+  // Sparks: update life
+  const sp = sparkGeo.attributes.position.array;
+  for (let i=0; i<sparkCount; i++){
+    if (sparkLife[i] > 0){
+      sparkLife[i] -= dt;
+      sp[i*3+0] += sparkVel[i*3+0] * dt;
+      sp[i*3+1] += sparkVel[i*3+1] * dt;
+      sp[i*3+2] += sparkVel[i*3+2] * dt;
+      sparkVel[i*3+1] -= 9 * dt;
+    }
+  }
+  sparkGeo.attributes.position.needsUpdate = true;
+  sparkMat.opacity = 0.9;
+}
+
+/* ============================================================
+   SOUND EVENT SCHEDULER
+   Triggers sound effects at specific times (once per playback direction).
+============================================================ */
+const soundEvents = [
+  { t: 0.1, fn: () => {}, once: false }, // rain is continuous
+  { t: 20.2, fn: () => bangSound(0.35) },
+  { t: 23.6, fn: () => bangSound(0.45) },
+  { t: 27.4, fn: () => bangSound(0.4) },
+  { t: 30.5, fn: () => bangSound(0.55) },
+  { t: 43.5, fn: () => metalClang(0.25) }, // tool falls
+  { t: 45.0, fn: () => bangSound(0.6) },
+  { t: 48.0, fn: () => metalClang(0.4) },
+  { t: 55.0, fn: () => { metalClang(0.5); emitSpark(0, 1.6, 5.8); } },
+  { t: 58.5, fn: () => bangSound(0.7) },
+  { t: 66.5, fn: () => {}, once: true },
+  { t: 72.5, fn: () => { engineStartSound(); } },
+  { t: 68.0, fn: () => { /* hit on window */ bangSound(0.3); } },
+  { t: 75.0, fn: () => { metalClang(0.4); } },
+  { t: 86.0, fn: () => { /* quiet */ } },
+];
+let lastTriggered = new Set();
+
+function processSoundEvents(t, prevT){
+  for (let i=0; i<soundEvents.length; i++){
+    const ev = soundEvents[i];
+    const key = i;
+    if (t >= ev.t && prevT < ev.t && !lastTriggered.has(key)){
+      lastTriggered.add(key);
+      try { ev.fn(); } catch(e){}
+    }
+    if (t < ev.t) lastTriggered.delete(key);
+  }
+}
+
+/* ============================================================
+   SEEK / PLAYBACK
+============================================================ */
+let filmTime = 0;
+let isPlaying = false;
+let lastT = performance.now() / 1000;
+let started = false;
+
+function setFilmTime(t){
+  filmTime = clamp(t, 0, DURATION);
+  document.getElementById('seek').value = filmTime;
+  updateTimecode();
+}
+
+function updateTimecode(){
+  const cur = filmTime.toFixed(1);
+  const mm = Math.floor(filmTime / 60).toString().padStart(2,'0');
+  const ss = Math.floor(filmTime % 60).toString().padStart(2,'0');
+  document.getElementById('timecode').textContent =
+    `${mm}:${ss} / 01:30`;
+}
+
+function renderAt(t){
+  updateCamera(t);
+  updateHero(t);
+  updateZombies(t);
+  updateGate(t);
+  updateCar(t);
+  updateLighting(t);
+  updateAudio(t);
+}
+
+/* ============================================================
+   MAIN LOOP
+============================================================ */
+function animate(){
+  requestAnimationFrame(animate);
+  const now = performance.now() / 1000;
+  const dt = Math.min(0.1, now - lastT);
+  lastT = now;
+
+  const prevT = filmTime;
+  if (isPlaying){
+    filmTime += dt;
+    if (filmTime >= DURATION){
+      filmTime = DURATION;
+      isPlaying = false;
+      onFilmEnd();
+    }
+    document.getElementById('seek').value = filmTime;
+    updateTimecode();
+  }
+
+  // Advance particle physics
+  updateParticles(filmTime, dt);
+
+  // Recompute scene state from time (deterministic)
+  renderAt(filmTime);
+
+  // Sound events
+  if (isPlaying) processSoundEvents(filmTime, prevT);
+
+  // Final pass time uniform
+  finalPass.uniforms.time.value = now;
+
+  // Bloom scaling based on scene
+  let bloomStrength = 0.9;
+  if (filmTime > 45 && filmTime < 60) bloomStrength = 1.4;
+  if (filmTime > 60 && filmTime < 75) bloomStrength = 1.1;
+  if (filmTime > 75) bloomStrength = 1.5;
+  bloomPass.strength = bloomStrength;
+
+  composer.render();
+}
+lastT = performance.now() / 1000;
+animate();
+
+/* ============================================================
+   UI
+============================================================ */
+const titleEl = document.getElementById('title');
+const hudEl = document.getElementById('hud');
+const endEl = document.getElementById('end');
+const flashEl = document.getElementById('flash');
+const playBtn = document.getElementById('playBtn');
+const btnPlay = document.getElementById('btnPlay');
+const btnRestart = document.getElementById('btnRestart');
+const btnMute = document.getElementById('btnMute');
+const btnFull = document.getElementById('btnFull');
+const seekEl = document.getElementById('seek');
+
+document.getElementById('load').classList.add('hide');
+
+function startFilm(){
+  if (!started){
+    initAudio();
+    started = true;
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  titleEl.style.opacity = '0';
+  setTimeout(() => { titleEl.style.display = 'none'; }, 800);
+  endEl.classList.remove('show');
+  filmTime = 0;
+  lastTriggered.clear();
+  isPlaying = true;
+  lastT = performance.now() / 1000;
+  btnPlay.textContent = '❚❚';
+  showHUD();
+}
+
+function onFilmEnd(){
+  endEl.classList.add('show');
+  btnPlay.textContent = '▶';
+}
+
+playBtn.addEventListener('click', startFilm);
+
+btnPlay.addEventListener('click', () => {
+  if (!started){ startFilm(); return; }
+  if (filmTime >= DURATION){
+    filmTime = 0; lastTriggered.clear();
+    endEl.classList.remove('show');
+  }
+  isPlaying = !isPlaying;
+  if (isPlaying && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  btnPlay.textContent = isPlaying ? '❚❚' : '▶';
+});
+
+btnRestart.addEventListener('click', () => {
+  filmTime = 0; lastTriggered.clear();
+  endEl.classList.remove('show');
+  isPlaying = true;
+  btnPlay.textContent = '❚❚';
+});
+
+btnMute.addEventListener('click', () => {
+  audioEnabled = !audioEnabled;
+  if (masterGain) masterGain.gain.value = audioEnabled ? 0.55 : 0;
+  btnMute.textContent = audioEnabled ? '🔊' : '🔇';
+});
+
+btnFull.addEventListener('click', () => {
+  if (!document.fullscreenElement){
+    (stageEl.requestFullscreen || stageEl.webkitRequestFullscreen || (()=>{})).call(stageEl);
+  } else {
+    document.exitFullscreen();
+  }
+});
+
+seekEl.addEventListener('input', (e) => {
+  const v = parseFloat(e.target.value);
+  filmTime = v;
+  lastTriggered.clear();
+  // re-trigger nothing until continue
+});
+
+// Show/hide HUD on tap
+let hudTimeout = null;
+function showHUD(){
+  hudEl.classList.add('show');
+  clearTimeout(hudTimeout);
+  hudTimeout = setTimeout(() => { if (isPlaying) hudEl.classList.remove('show'); }, 3000);
+}
+stageEl.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('#hud') || e.target.closest('#title') || e.target.closest('#end')) return;
+  if (hudEl.classList.contains('show')) hudEl.classList.remove('show');
+  else showHUD();
+});
+
+// Resize
+function onResize(){
+  const w = stageEl.clientWidth, h = stageEl.clientHeight;
+  renderer.setSize(w, h, false);
+  composer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+// Prevent scroll / context menu
+document.addEventListener('touchmove', e => e.preventDefault(), { passive:false });
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// Init first frame
+setFilmTime(0);
+renderAt(0);
+</script>
+</body>
+</html>
